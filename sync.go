@@ -12,6 +12,8 @@ import (
 )
 
 func syncFiles(sourceFolder, oneDriveFolder string, encrypt bool) {
+	startTime := time.Now() // Start timing the function
+
 	metadataFile := filepath.Join(oneDriveFolder, "metadata.json")
 
 	metadata := loadMetadata(metadataFile)
@@ -22,6 +24,8 @@ func syncFiles(sourceFolder, oneDriveFolder string, encrypt bool) {
 	copiedFilesCount := 0
 	fileExtensionCount := make(map[string]int) // Map to track file extension counts
 	updatedPhotos := make(map[string]string)   // Map to track updated photos and their new hashes
+
+	photoProcessingTime := time.Duration(0) // To track total time for new or updated photos
 
 	err := filepath.Walk(sourceFolder, func(path string, info os.FileInfo, err error) error {
 		if err != nil {
@@ -43,6 +47,8 @@ func syncFiles(sourceFolder, oneDriveFolder string, encrypt bool) {
 
 			var destPath string
 			if strings.ToLower(filepath.Ext(path)) == ".cr2" {
+				photoStartTime := time.Now() // Start timing for this photo
+
 				// Compute the hash of the file contents
 				hash := sha256.Sum256(data)
 				hashString := hex.EncodeToString(hash[:])
@@ -66,6 +72,7 @@ func syncFiles(sourceFolder, oneDriveFolder string, encrypt bool) {
 						metadata = append(metadata, newMetadata)
 						metadataMap[relativePath] = newMetadata
 						newPhotosCount++
+						photoProcessingTime += time.Since(photoStartTime) // Add time taken for this photo
 					} else {
 						skippedPhotosCount++
 					}
@@ -82,6 +89,7 @@ func syncFiles(sourceFolder, oneDriveFolder string, encrypt bool) {
 					metadataMap[relativePath] = newMetadata
 
 					newPhotosCount++
+					photoProcessingTime += time.Since(photoStartTime) // Add time taken for this photo
 				}
 			} else {
 				// Create the destination path
@@ -146,6 +154,13 @@ func syncFiles(sourceFolder, oneDriveFolder string, encrypt bool) {
 			summary += fmt.Sprintf("  %s (new hash: %s)\n", photo, hash)
 		}
 	}
+
+	// Add timing information to the summary
+	totalTime := time.Since(startTime)
+	averagePhotoTime := photoProcessingTime.Seconds() / float64(newPhotosCount+len(updatedPhotos))
+	summary += fmt.Sprintf("------------------------------------------\n")
+	summary += fmt.Sprintf("Total time taken: %.2f seconds\n", totalTime.Seconds())
+	summary += fmt.Sprintf("Average time per new/updated photo: %.2f seconds\n", averagePhotoTime)
 
 	// Print the summary to standard out
 	fmt.Print(summary)
