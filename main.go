@@ -20,10 +20,16 @@ func main() {
 	syncFlag := flag.Bool("sync", false, "Sync files to OneDrive")
 	restorePath := flag.String("restore", "", "Destination path for restoring files")
 	encryptFlag := flag.Bool("encrypt", false, "Encrypt files before copying")
+	sourceFolder := flag.String("source", "", "Source folder for syncing files")
+	oneDriveFolder := flag.String("onedrive", "", "OneDrive folder for syncing files")
 	flag.Parse()
 
 	if *syncFlag {
-		syncFiles(*encryptFlag)
+		if *sourceFolder == "" || *oneDriveFolder == "" {
+			fmt.Println("Error: -source and -onedrive flags must be specified for syncing files")
+			os.Exit(1)
+		}
+		syncFiles(*sourceFolder, *oneDriveFolder, *encryptFlag)
 	} else if *restorePath != "" {
 		restoreFiles(*restorePath)
 	} else {
@@ -33,7 +39,9 @@ func main() {
 
 func printHelp() {
 	fmt.Println("Usage:")
-	fmt.Println("  -sync    Sync files to OneDrive")
-	fmt.Println("  -restore Restore files from OneDrive")
-	fmt.Println("  -encrypt Encrypt files before copying")
+	fmt.Println("  -sync       Sync files to OneDrive")
+	fmt.Println("  -restore    Restore files from OneDrive")
+	fmt.Println("  -encrypt    Encrypt files before copying")
+	fmt.Println("  -source     Source folder for syncing files")
+	fmt.Println("  -onedrive   OneDrive folder for syncing files")
 }

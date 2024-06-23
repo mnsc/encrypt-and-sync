@@ -11,9 +11,7 @@ import (
 	"time"
 )
 
-func syncFiles(encrypt bool) {
-	rootFolder := "C:\\Temp\\SourceTest"
-	oneDriveFolder := "C:\\Temp\\OneDriveTest"
+func syncFiles(sourceFolder, oneDriveFolder string, encrypt bool) {
 	metadataFile := filepath.Join(oneDriveFolder, "metadata.json")
 
 	metadata := loadMetadata(metadataFile)
@@ -25,7 +23,7 @@ func syncFiles(encrypt bool) {
 	fileExtensionCount := make(map[string]int) // Map to track file extension counts
 	updatedPhotos := make(map[string]string)   // Map to track updated photos and their new hashes
 
-	err := filepath.Walk(rootFolder, func(path string, info os.FileInfo, err error) error {
+	err := filepath.Walk(sourceFolder, func(path string, info os.FileInfo, err error) error {
 		if err != nil {
 			return err
 		}
@@ -38,7 +36,7 @@ func syncFiles(encrypt bool) {
 			}
 
 			// Create the destination path
-			relativePath, err := filepath.Rel(rootFolder, path)
+			relativePath, err := filepath.Rel(sourceFolder, path)
 			if err != nil {
 				return err
 			}

@@ -10,7 +10,7 @@
             "request": "launch",
             "mode": "auto",
             "program": "${workspaceFolder}",
-            "args": ["-sync", "-encrypt"],
+            "args": ["-sync", "-encrypt", "-source", "${input:sourceFolder}", "-onedrive", "${input:onedriveFolder}"],
             "env": {
                 "ENCRYPTION_KEY": "correct-horse-battery-staple-32."
             }
@@ -21,10 +21,31 @@
             "request": "launch",
             "mode": "auto",
             "program": "${workspaceFolder}",
-            "args": ["-restore", "c:\\temp\\restore\\test3"],
+            "args": ["-restore", "${input:restoreFolder}", "-onedrive", "${input:onedriveFolder}"],
             "env": {
                 "ENCRYPTION_KEY": "correct-horse-battery-staple-32."
             }
+        }
+    ],
+    "inputs": [
+        {
+            "id": "sourceFolder",
+            "type": "promptString",
+            "description": "Enter the source folder path",
+            "default": "C:\\Temp\\SourceTest"
+        },
+        {
+            "id": "onedriveFolder",
+            "type": "promptString",
+            "description": "Enter the OneDrive folder path",
+            "default": "C:\\Temp\\OneDriveTest"
+        }
+        },
+        {
+            "id": "restoreFolder",
+            "type": "promptString",
+            "description": "Enter the restore folder path",
+            "default": "c:\\temp\\restore\\test3"
         }
     ]
 }
