@@ -9,6 +9,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"syscall"
 	"time"
 )
 
@@ -75,25 +76,28 @@ func syncFiles() {
 				// Get the last modified time in epoch seconds
 				modTime := info.ModTime().Unix()
 
-				// Check if the file with the same path and hash already exists in metadata
-				if !isFileInMetadataMap(metadataMap, relativePath, hashString) {
-					// Create the destination path with hash
-					destPath = filepath.Join(oneDriveFolder, relativePath+"-"+hashString+".encr")
-
-					// Encrypt the file (placeholder for actual encryption)
-					encryptedData := encrypt(data)
-
-					// Ensure the destination directory exists
-					destDir := filepath.Dir(destPath)
-					if err := os.MkdirAll(destDir, os.ModePerm); err != nil {
-						return err
+				// Check if the file with the same path exists in metadata
+				if metadataEntry, exists := metadataMap[relativePath]; exists {
+					// If the file exists but has a new hash, add to updatedPhotos
+					if metadataEntry.Hash != hashString {
+						updatedPhotos[relativePath] = hashString
+						// Handle the file encryption and writing
+						handleFileEncryptionAndWriting(oneDriveFolder, relativePath, hashString, data, info)
+						// Update metadata
+						newMetadata := FileMetadata{
+							OriginalPath: relativePath,
+							Hash:         hashString,
+							ModTime:      modTime,
+						}
+						metadata = append(metadata, newMetadata)
+						metadataMap[relativePath] = newMetadata
+						newPhotosCount++
+					} else {
+						skippedPhotosCount++
 					}
-
-					// Write the encrypted file to the destination
-					if err := os.WriteFile(destPath, encryptedData, info.Mode()); err != nil {
-						return err
-					}
-
+				} else {
+					// Handle the file encryption and writing
+					handleFileEncryptionAndWriting(oneDriveFolder, relativePath, hashString, data, info)
 					// Update metadata
 					newMetadata := FileMetadata{
 						OriginalPath: relativePath,
@@ -101,32 +105,34 @@ func syncFiles() {
 						ModTime:      modTime,
 					}
 					metadata = append(metadata, newMetadata)
-					metadataMap[relativePath+"-"+hashString] = newMetadata
+					metadataMap[relativePath] = newMetadata
 
 					newPhotosCount++
-				} else {
-					// If the file exists but has a new hash, add to updatedPhotos
-					updatedPhotos[relativePath] = hashString
-					skippedPhotosCount++
 				}
 			} else {
-				// Just copy the file
-				destPath = filepath.Join(oneDriveFolder, relativePath)
+				// Check if the archive bit is set
+				if isArchiveBitSet(path) {
+					// Just copy the file
+					destPath = filepath.Join(oneDriveFolder, relativePath)
 
-				// Ensure the destination directory exists
-				destDir := filepath.Dir(destPath)
-				if err := os.MkdirAll(destDir, os.ModePerm); err != nil {
-					return err
+					// Ensure the destination directory exists
+					destDir := filepath.Dir(destPath)
+					if err := os.MkdirAll(destDir, os.ModePerm); err != nil {
+						return err
+					}
+
+					// Write the file to the destination
+					if err := os.WriteFile(destPath, data, info.Mode()); err != nil {
+						return err
+					}
+
+					// Reset the archive bit
+					resetArchiveBit(path)
+
+					copiedFilesCount++
+					ext := strings.ToLower(filepath.Ext(path))
+					fileExtensionCount[ext]++ // Update the count for the file extension
 				}
-
-				// Write the file to the destination
-				if err := os.WriteFile(destPath, data, info.Mode()); err != nil {
-					return err
-				}
-
-				copiedFilesCount++
-				ext := strings.ToLower(filepath.Ext(path))
-				fileExtensionCount[ext]++ // Update the count for the file extension
 			}
 
 		}
@@ -172,6 +178,27 @@ func syncFiles() {
 	}
 }
 
+func handleFileEncryptionAndWriting(oneDriveFolder, relativePath, hashString string, data []byte, info os.FileInfo) error {
+	// Create the destination path with hash
+	destPath := filepath.Join(oneDriveFolder, relativePath+"-"+hashString+".encr")
+
+	// Encrypt the file (placeholder for actual encryption)
+	encryptedData := encrypt(data)
+
+	// Ensure the destination directory exists
+	destDir := filepath.Dir(destPath)
+	if err := os.MkdirAll(destDir, os.ModePerm); err != nil {
+		return err
+	}
+
+	// Write the encrypted file to the destination
+	if err := os.WriteFile(destPath, encryptedData, info.Mode()); err != nil {
+		return err
+	}
+
+	return nil
+}
+
 func printHelp() {
 	fmt.Println("Usage:")
 	fmt.Println("  -sync    Sync files to OneDrive")
@@ -201,7 +228,7 @@ func saveMetadata(filePath string, metadata []FileMetadata) {
 func createMetadataMap(metadata []FileMetadata) map[string]FileMetadata {
 	metadataMap := make(map[string]FileMetadata)
 	for _, entry := range metadata {
-		key := entry.OriginalPath + "-" + entry.Hash
+		key := entry.OriginalPath
 		metadataMap[key] = entry
 	}
 	return metadataMap
@@ -211,4 +238,33 @@ func isFileInMetadataMap(metadataMap map[string]FileMetadata, path, hash string)
 	key := path + "-" + hash
 	_, exists := metadataMap[key]
 	return exists
+}
+
+func isArchiveBitSet(path string) bool {
+	// Get file attributes
+	pathPtr, err := syscall.UTF16PtrFromString(path)
+	if err != nil {
+		return false
+	}
+	attrs, err := syscall.GetFileAttributes(pathPtr)
+	if err != nil {
+		return false
+	}
+	// Check if the archive bit is set
+	return attrs&syscall.FILE_ATTRIBUTE_ARCHIVE != 0
+}
+
+func resetArchiveBit(path string) error {
+	// Get current file attributes
+	pathPtr, err := syscall.UTF16PtrFromString(path)
+	if err != nil {
+		return err
+	}
+	attrs, err := syscall.GetFileAttributes(pathPtr)
+	if err != nil {
+		return err
+	}
+	// Remove the archive bit
+	newAttrs := attrs &^ syscall.FILE_ATTRIBUTE_ARCHIVE
+	return syscall.SetFileAttributes(pathPtr, newAttrs)
 }
