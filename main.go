@@ -1,17 +1,23 @@
 package main
 
 import (
+	"crypto/aes"
+	"crypto/cipher"
+	"crypto/rand"
 	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"
 	"flag"
 	"fmt"
+	"io"
 	"os"
 	"path/filepath"
 	"strings"
 	"syscall"
 	"time"
 )
+
+const keySize = 32
 
 type FileMetadata struct {
 	OriginalPath string `json:"original_path"`
@@ -20,13 +26,21 @@ type FileMetadata struct {
 }
 
 func main() {
+	// Check if the encryption key is set and has the correct length
+	key := os.Getenv("ENCRYPTION_KEY")
+	if len(key) != keySize {
+		fmt.Println("Error: ENCRYPTION_KEY environment variable must be set and 32 bytes long")
+		os.Exit(1)
+	}
+
 	// Define command line options
 	syncFlag := flag.Bool("sync", false, "Sync files to OneDrive")
 	restorePath := flag.String("restore", "", "Destination path for restoring files")
+	encryptFlag := flag.Bool("encrypt", false, "Encrypt files before copying")
 	flag.Parse()
 
 	if *syncFlag {
-		syncFiles()
+		syncFiles(*encryptFlag)
 	} else if *restorePath != "" {
 		restoreFiles(*restorePath)
 	} else {
@@ -34,7 +48,7 @@ func main() {
 	}
 }
 
-func syncFiles() {
+func syncFiles(encrypt bool) {
 	rootFolder := "C:\\Temp\\SourceTest"
 	oneDriveFolder := "C:\\Temp\\OneDriveTest"
 	metadataFile := filepath.Join(oneDriveFolder, "metadata.json")
@@ -81,7 +95,7 @@ func syncFiles() {
 					if metadataEntry.Hash != hashString {
 						updatedPhotos[relativePath] = hashString
 						// Handle the file encryption and writing
-						handleFileEncryptionAndWriting(oneDriveFolder, relativePath, hashString, data, info)
+						handleFileEncryptionAndWriting(oneDriveFolder, relativePath, hashString, data, info, encrypt)
 						// Update metadata
 						newMetadata := FileMetadata{
 							OriginalPath: relativePath,
@@ -96,7 +110,7 @@ func syncFiles() {
 					}
 				} else {
 					// Handle the file encryption and writing
-					handleFileEncryptionAndWriting(oneDriveFolder, relativePath, hashString, data, info)
+					handleFileEncryptionAndWriting(oneDriveFolder, relativePath, hashString, data, info, encrypt)
 					// Update metadata
 					newMetadata := FileMetadata{
 						OriginalPath: relativePath,
@@ -177,12 +191,25 @@ func syncFiles() {
 	}
 }
 
-func handleFileEncryptionAndWriting(oneDriveFolder, relativePath, hashString string, data []byte, info os.FileInfo) error {
-	// Create the destination path with hash
-	destPath := filepath.Join(oneDriveFolder, relativePath+"-"+hashString+".encr")
+func handleFileEncryptionAndWriting(oneDriveFolder, relativePath, hashString string, data []byte, info os.FileInfo, encryptFile bool) error {
+	var destPath string
+	var fileData []byte
 
-	// Encrypt the file (placeholder for actual encryption)
-	encryptedData := encrypt(data)
+	if encryptFile {
+		// Create the destination path with hash
+		destPath = filepath.Join(oneDriveFolder, relativePath+"-"+hashString+".encr")
+		// Encrypt the file
+		key := []byte(os.Getenv("ENCRYPTION_KEY"))
+		encryptedData, err := encrypt(data, key)
+		if err != nil {
+			return err
+		}
+		fileData = encryptedData
+	} else {
+		// Create the destination path without encryption
+		destPath = filepath.Join(oneDriveFolder, relativePath)
+		fileData = data
+	}
 
 	// Ensure the destination directory exists
 	destDir := filepath.Dir(destPath)
@@ -190,8 +217,8 @@ func handleFileEncryptionAndWriting(oneDriveFolder, relativePath, hashString str
 		return err
 	}
 
-	// Write the encrypted file to the destination
-	if err := os.WriteFile(destPath, encryptedData, info.Mode()); err != nil {
+	// Write the file to the destination
+	if err := os.WriteFile(destPath, fileData, info.Mode()); err != nil {
 		return err
 	}
 
@@ -202,12 +229,52 @@ func printHelp() {
 	fmt.Println("Usage:")
 	fmt.Println("  -sync    Sync files to OneDrive")
 	fmt.Println("  -restore Restore files from OneDrive")
+	fmt.Println("  -encrypt Encrypt files before copying")
 }
 
-func encrypt(data []byte) []byte {
-	// Placeholder for actual encryption logic
-	// For now, just return the data as-is
-	return data
+func encrypt(data []byte, key []byte) ([]byte, error) {
+	block, err := aes.NewCipher(key)
+	if err != nil {
+		return nil, err
+	}
+
+	gcm, err := cipher.NewGCM(block)
+	if err != nil {
+		return nil, err
+	}
+
+	nonce := make([]byte, gcm.NonceSize())
+	if _, err := io.ReadFull(rand.Reader, nonce); err != nil {
+		return nil, err
+	}
+
+	ciphertext := gcm.Seal(nonce, nonce, data, nil)
+	return ciphertext, nil
+}
+
+func decrypt(data []byte, key []byte) ([]byte, error) {
+	block, err := aes.NewCipher(key)
+	if err != nil {
+		return nil, err
+	}
+
+	gcm, err := cipher.NewGCM(block)
+	if err != nil {
+		return nil, err
+	}
+
+	nonceSize := gcm.NonceSize()
+	if len(data) < nonceSize {
+		return nil, fmt.Errorf("ciphertext too short")
+	}
+
+	nonce, ciphertext := data[:nonceSize], data[nonceSize:]
+	plaintext, err := gcm.Open(nil, nonce, ciphertext, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return plaintext, nil
 }
 
 func loadMetadata(filePath string) []FileMetadata {
@@ -281,8 +348,12 @@ func restoreFiles(destinationPath string) {
 			continue
 		}
 
-		// Decrypt the file (placeholder for actual decryption)
-		data := decrypt(encryptedData)
+		// Decrypt the file
+		data, err := decrypt(encryptedData, []byte(os.Getenv("ENCRYPTION_KEY")))
+		if err != nil {
+			fmt.Printf("Error decrypting file %s: %v\n", sourcePath, err)
+			continue
+		}
 
 		// Construct the destination path
 		destPath := filepath.Join(destinationPath, file.OriginalPath)
@@ -348,10 +419,4 @@ func getLatestFiles(metadata []FileMetadata) map[string]FileMetadata {
 		}
 	}
 	return latestFiles
-}
-
-func decrypt(data []byte) []byte {
-	// Placeholder for actual decryption logic
-	// For now, just return the data as-is
-	return data
 }

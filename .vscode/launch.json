@@ -10,7 +10,10 @@
             "request": "launch",
             "mode": "auto",
             "program": "${workspaceFolder}",
-            "args": ["-sync"]
+            "args": ["-sync", "-encrypt"],
+            "env": {
+                "ENCRYPTION_KEY": "correct-horse-battery-staple-32."
+            }
         },
         {
             "name": "Run -restore c:\\temp\\restore...",
