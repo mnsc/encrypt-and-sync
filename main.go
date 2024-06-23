@@ -234,12 +234,6 @@ func createMetadataMap(metadata []FileMetadata) map[string]FileMetadata {
 	return metadataMap
 }
 
-func isFileInMetadataMap(metadataMap map[string]FileMetadata, path, hash string) bool {
-	key := path + "-" + hash
-	_, exists := metadataMap[key]
-	return exists
-}
-
 func isArchiveBitSet(path string) bool {
 	// Get file attributes
 	pathPtr, err := syscall.UTF16PtrFromString(path)
