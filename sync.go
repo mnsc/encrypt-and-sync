@@ -6,12 +6,13 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"regexp"
 	"strings"
 	"syscall"
 	"time"
 )
 
-func syncFiles(sourceFolder, oneDriveFolder string, encrypt bool) {
+func syncFiles(sourceFolder, oneDriveFolder string, encrypt bool, pathRegexp string) {
 	startTime := time.Now() // Start timing the function
 
 	metadataFile := filepath.Join(oneDriveFolder, "metadata.json")
@@ -27,20 +28,32 @@ func syncFiles(sourceFolder, oneDriveFolder string, encrypt bool) {
 
 	photoProcessingTime := time.Duration(0) // To track total time for new or updated photos
 
-	err := filepath.Walk(sourceFolder, func(path string, info os.FileInfo, err error) error {
+	// Compile the regular expression
+	re, err := regexp.Compile(pathRegexp)
+	if err != nil {
+		fmt.Printf("Invalid regular expression: %v\n", err)
+		return
+	}
+
+	err = filepath.Walk(sourceFolder, func(path string, info os.FileInfo, err error) error {
 		if err != nil {
 			return err
 		}
 
 		if !info.IsDir() {
-			// Read the file
-			data, err := os.ReadFile(path)
+			// Create the relative path
+			relativePath, err := filepath.Rel(sourceFolder, path)
 			if err != nil {
 				return err
 			}
 
-			// Create the destination path
-			relativePath, err := filepath.Rel(sourceFolder, path)
+			// Check if the relative path matches the regular expression
+			if !re.MatchString(relativePath) {
+				return nil
+			}
+
+			// Read the file
+			data, err := os.ReadFile(path)
 			if err != nil {
 				return err
 			}
@@ -155,12 +168,13 @@ func syncFiles(sourceFolder, oneDriveFolder string, encrypt bool) {
 		}
 	}
 
-	// Add timing information to the summary
+	// Add timing information and regexp to the summary
 	totalTime := time.Since(startTime)
 	averagePhotoTime := photoProcessingTime.Seconds() / float64(newPhotosCount+len(updatedPhotos))
 	summary += fmt.Sprintf("------------------------------------------\n")
 	summary += fmt.Sprintf("Total time taken: %.2f seconds\n", totalTime.Seconds())
 	summary += fmt.Sprintf("Average time per new/updated photo: %.2f seconds\n", averagePhotoTime)
+	summary += fmt.Sprintf("Regular expression used: %s\n", pathRegexp)
 
 	// Print the summary to standard out
 	fmt.Print(summary)

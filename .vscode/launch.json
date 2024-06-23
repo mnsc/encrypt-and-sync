@@ -10,7 +10,7 @@
             "request": "launch",
             "mode": "auto",
             "program": "${workspaceFolder}",
-            "args": ["-sync", "-encrypt", "-source", "${input:sourceFolder}", "-onedrive", "${input:onedriveFolder}"],
+            "args": ["-sync", "-encrypt", "-source", "${input:sourceFolder}", "-onedrive", "${input:onedriveFolder}", "-pathregexp", "${input:pathregexp}"],
             "env": {
                 "ENCRYPTION_KEY": "correct-horse-battery-staple-32."
             }
@@ -39,13 +39,18 @@
             "type": "promptString",
             "description": "Enter the OneDrive folder path",
             "default": "C:\\Temp\\OneDriveTest"
-        }
         },
         {
             "id": "restoreFolder",
             "type": "promptString",
             "description": "Enter the restore folder path",
             "default": "c:\\temp\\restore\\test3"
+        },
+        {
+            "id": "pathregexp",
+            "type": "promptString",
+            "description": "Enter the regexp to process files",
+            "default": ".*"
         }
     ]
 }

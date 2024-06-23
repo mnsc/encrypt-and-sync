@@ -19,9 +19,10 @@ func main() {
 	// Define command line options
 	syncFlag := flag.Bool("sync", false, "Sync files to OneDrive")
 	restorePath := flag.String("restore", "", "Destination path for restoring files")
-	encryptFlag := flag.Bool("encrypt", false, "Encrypt files before copying")
+	encryptFlag := flag.Bool("encrypt", true, "Encrypt files before copying")
 	sourceFolder := flag.String("source", "", "Source folder for syncing files")
 	oneDriveFolder := flag.String("onedrive", "", "OneDrive folder for syncing files")
+	pathRegexp := flag.String("pathregexp", ".*", "Regular expression to match file paths for processing")
 	flag.Parse()
 
 	if *syncFlag {
@@ -29,7 +30,7 @@ func main() {
 			fmt.Println("Error: -source and -onedrive flags must be specified for syncing files")
 			os.Exit(1)
 		}
-		syncFiles(*sourceFolder, *oneDriveFolder, *encryptFlag)
+		syncFiles(*sourceFolder, *oneDriveFolder, *encryptFlag, *pathRegexp)
 	} else if *restorePath != "" {
 		restoreFiles(*restorePath)
 	} else {
@@ -44,4 +45,5 @@ func printHelp() {
 	fmt.Println("  -encrypt    Encrypt files before copying")
 	fmt.Println("  -source     Source folder for syncing files")
 	fmt.Println("  -onedrive   OneDrive folder for syncing files")
+	fmt.Println("  -pathregexp Regular expression to match file paths for processing")
 }
