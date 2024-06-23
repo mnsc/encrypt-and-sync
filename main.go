@@ -4,10 +4,12 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"
+	"flag"
 	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
+	"time"
 )
 
 type FileMetadata struct {
@@ -17,12 +19,34 @@ type FileMetadata struct {
 }
 
 func main() {
+	// Define command line options
+	syncFlag := flag.Bool("sync", false, "Sync files to OneDrive")
+	restoreFlag := flag.Bool("restore", false, "Restore files from OneDrive")
+	flag.Parse()
+
+	if *syncFlag {
+		syncFiles()
+	} else if *restoreFlag {
+		// Placeholder for restore logic
+		fmt.Println("Restore functionality not implemented yet.")
+	} else {
+		printHelp()
+	}
+}
+
+func syncFiles() {
 	rootFolder := "C:\\Temp\\SourceTest"
 	oneDriveFolder := "C:\\Temp\\OneDriveTest"
 	metadataFile := filepath.Join(oneDriveFolder, "metadata.json")
 
 	metadata := loadMetadata(metadataFile)
 	metadataMap := createMetadataMap(metadata)
+
+	newPhotosCount := 0
+	skippedPhotosCount := 0
+	copiedFilesCount := 0
+	fileExtensionCount := make(map[string]int) // Map to track file extension counts
+	updatedPhotos := make(map[string]string)   // Map to track updated photos and their new hashes
 
 	err := filepath.Walk(rootFolder, func(path string, info os.FileInfo, err error) error {
 		if err != nil {
@@ -78,8 +102,12 @@ func main() {
 					}
 					metadata = append(metadata, newMetadata)
 					metadataMap[relativePath+"-"+hashString] = newMetadata
+
+					newPhotosCount++
 				} else {
-					fmt.Printf("File already exists in metadata, skipping: %s\n", relativePath)
+					// If the file exists but has a new hash, add to updatedPhotos
+					updatedPhotos[relativePath] = hashString
+					skippedPhotosCount++
 				}
 			} else {
 				// Just copy the file
@@ -95,7 +123,10 @@ func main() {
 				if err := os.WriteFile(destPath, data, info.Mode()); err != nil {
 					return err
 				}
-				fmt.Printf("Copied: %s -> %s\n", path, destPath)
+
+				copiedFilesCount++
+				ext := strings.ToLower(filepath.Ext(path))
+				fileExtensionCount[ext]++ // Update the count for the file extension
 			}
 
 		}
@@ -109,6 +140,42 @@ func main() {
 
 	// Save metadata at the end
 	saveMetadata(metadataFile, metadata)
+
+	// Create the summary
+	summary := fmt.Sprintf("------------------------------------------\n")
+	summary += fmt.Sprintf("New photos: %d\n", newPhotosCount)
+	summary += fmt.Sprintf("Skipped photos: %d\n", skippedPhotosCount)
+	summary += fmt.Sprintf("------------------------------------------\n")
+	summary += fmt.Sprintf("Copied %d other files\n", copiedFilesCount)
+	summary += "Types:\n"
+	for ext, count := range fileExtensionCount {
+		summary += fmt.Sprintf("  %s: %d\n", ext, count)
+	}
+
+	// Add updated photos to the summary
+	if len(updatedPhotos) > 0 {
+		summary += "------------------------------------------\n"
+		summary += "Updated photos:\n"
+		for photo, hash := range updatedPhotos {
+			summary += fmt.Sprintf("  %s (new hash: %s)\n", photo, hash)
+		}
+	}
+
+	// Print the summary to standard out
+	fmt.Print(summary)
+
+	// Write the summary to a timestamped file
+	timestamp := time.Now().Format("20060102-150405")
+	summaryFile := filepath.Join(oneDriveFolder, fmt.Sprintf("sync-summary-%s.txt", timestamp))
+	if err := os.WriteFile(summaryFile, []byte(summary), 0644); err != nil {
+		fmt.Printf("Error writing summary file: %v\n", err)
+	}
+}
+
+func printHelp() {
+	fmt.Println("Usage:")
+	fmt.Println("  -sync    Sync files to OneDrive")
+	fmt.Println("  -restore Restore files from OneDrive")
 }
 
 func encrypt(data []byte) []byte {
