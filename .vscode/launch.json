@@ -21,7 +21,10 @@
             "request": "launch",
             "mode": "auto",
             "program": "${workspaceFolder}",
-            "args": ["-restore", "c:\\temp\\restore\\test2"]
+            "args": ["-restore", "c:\\temp\\restore\\test3"],
+            "env": {
+                "ENCRYPTION_KEY": "correct-horse-battery-staple-32."
+            }
         }
     ]
 }

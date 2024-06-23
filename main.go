@@ -123,29 +123,35 @@ func syncFiles(encrypt bool) {
 					newPhotosCount++
 				}
 			} else {
-				// Check if the archive bit is set
-				if isArchiveBitSet(path) {
-					// Just copy the file
-					destPath = filepath.Join(oneDriveFolder, relativePath)
+				// Create the destination path
+				destPath = filepath.Join(oneDriveFolder, relativePath)
 
-					// Ensure the destination directory exists
-					destDir := filepath.Dir(destPath)
-					if err := os.MkdirAll(destDir, os.ModePerm); err != nil {
-						return err
+				// Check if the destination file exists
+				if _, err := os.Stat(destPath); err == nil {
+					// File exists, check if the archive bit is set
+					if !isArchiveBitSet(path) {
+						// Skip the file if the archive bit is not set
+						return nil
 					}
-
-					// Write the file to the destination
-					if err := os.WriteFile(destPath, data, info.Mode()); err != nil {
-						return err
-					}
-
-					// Reset the archive bit
-					resetArchiveBit(path)
-
-					copiedFilesCount++
-					ext := strings.ToLower(filepath.Ext(path))
-					fileExtensionCount[ext]++ // Update the count for the file extension
 				}
+
+				// Ensure the destination directory exists
+				destDir := filepath.Dir(destPath)
+				if err := os.MkdirAll(destDir, os.ModePerm); err != nil {
+					return err
+				}
+
+				// Write the file to the destination
+				if err := os.WriteFile(destPath, data, info.Mode()); err != nil {
+					return err
+				}
+
+				// Reset the archive bit
+				resetArchiveBit(path)
+
+				copiedFilesCount++
+				ext := strings.ToLower(filepath.Ext(path))
+				fileExtensionCount[ext]++ // Update the count for the file extension
 			}
 
 		}
