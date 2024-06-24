@@ -9,7 +9,7 @@ import (
 	"time"
 )
 
-func restoreFiles(oneDriveFolder, destinationPath string, test bool) {
+func restoreFiles(oneDriveFolder, destinationPath string, key []byte, test bool) {
 	metadataFile := filepath.Join(oneDriveFolder, "metadata.json")
 
 	metadata := loadMetadata(metadataFile)
@@ -38,7 +38,7 @@ func restoreFiles(oneDriveFolder, destinationPath string, test bool) {
 		}
 
 		// Decrypt the file
-		data, err := decrypt(encryptedData, []byte(os.Getenv("ENCRYPTION_KEY")))
+		data, err := decrypt(encryptedData, key)
 		if err != nil {
 			fmt.Printf("Error decrypting file %s: %v\n", sourcePath, err)
 			continue

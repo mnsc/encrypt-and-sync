@@ -1,19 +1,29 @@
 package main
 
 import (
+	"bufio"
 	"flag"
 	"fmt"
 	"os"
+	"strings"
 )
 
 const keySize = 32
 
 func main() {
 	// Check if the encryption key is set and has the correct length
-	key := os.Getenv("ENCRYPTION_KEY")
-	if len(key) != keySize {
-		fmt.Println("Error: ENCRYPTION_KEY environment variable must be set and 32 bytes long")
-		os.Exit(1)
+	keyString := os.Getenv("ENCRYPTION_KEY")
+	var key []byte
+	if len(keyString) != keySize {
+		fmt.Println("ENCRYPTION_KEY environment variable not set or incorrect length. Please enter the encryption key:")
+		reader := bufio.NewReader(os.Stdin)
+		keyString, _ = reader.ReadString('\n')
+		keyString = strings.TrimSpace(keyString)
+		if len(keyString) != keySize {
+			fmt.Println("Error: ENCRYPTION_KEY must be 32 bytes long")
+			os.Exit(1)
+		}
+		key = []byte(keyString)
 	}
 
 	// Define command line options
@@ -31,9 +41,9 @@ func main() {
 			fmt.Println("Error: -source and -onedrive flags must be specified for syncing files")
 			os.Exit(1)
 		}
-		syncFiles(*sourceFolder, *oneDriveFolder, *encryptFlag, *pathRegexp)
+		syncFiles(*sourceFolder, *oneDriveFolder, *encryptFlag, key, *pathRegexp)
 	} else if *restorePath != "" {
-		restoreFiles(*oneDriveFolder, *restorePath, *testFlag)
+		restoreFiles(*oneDriveFolder, *restorePath, key, *testFlag)
 	} else {
 		printHelp()
 	}

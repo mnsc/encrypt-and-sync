@@ -12,7 +12,7 @@ import (
 	"time"
 )
 
-func syncFiles(sourceFolder, oneDriveFolder string, encrypt bool, pathRegexp string) {
+func syncFiles(sourceFolder, oneDriveFolder string, encrypt bool, key []byte, pathRegexp string) {
 	startTime := time.Now() // Start timing the function
 
 	metadataFile := filepath.Join(oneDriveFolder, "metadata.json")
@@ -75,7 +75,7 @@ func syncFiles(sourceFolder, oneDriveFolder string, encrypt bool, pathRegexp str
 					if metadataEntry.Hash != hashString {
 						updatedPhotos[relativePath] = hashString
 						// Handle the file encryption and writing
-						handleFileEncryptionAndWriting(oneDriveFolder, relativePath, hashString, data, info, encrypt)
+						handleFileEncryptionAndWriting(oneDriveFolder, relativePath, hashString, data, key, info, encrypt)
 						// Update metadata
 						newMetadata := FileMetadata{
 							OriginalPath: relativePath,
@@ -91,7 +91,7 @@ func syncFiles(sourceFolder, oneDriveFolder string, encrypt bool, pathRegexp str
 					}
 				} else {
 					// Handle the file encryption and writing
-					handleFileEncryptionAndWriting(oneDriveFolder, relativePath, hashString, data, info, encrypt)
+					handleFileEncryptionAndWriting(oneDriveFolder, relativePath, hashString, data, key, info, encrypt)
 					// Update metadata
 					newMetadata := FileMetadata{
 						OriginalPath: relativePath,
@@ -187,7 +187,7 @@ func syncFiles(sourceFolder, oneDriveFolder string, encrypt bool, pathRegexp str
 	}
 }
 
-func handleFileEncryptionAndWriting(oneDriveFolder, relativePath, hashString string, data []byte, info os.FileInfo, encryptFile bool) error {
+func handleFileEncryptionAndWriting(oneDriveFolder, relativePath, hashString string, data []byte, key []byte, info os.FileInfo, encryptFile bool) error {
 	var destPath string
 	var fileData []byte
 
@@ -195,7 +195,6 @@ func handleFileEncryptionAndWriting(oneDriveFolder, relativePath, hashString str
 		// Create the destination path with hash
 		destPath = filepath.Join(oneDriveFolder, relativePath+"-"+hashString+".encr")
 		// Encrypt the file
-		key := []byte(os.Getenv("ENCRYPTION_KEY"))
 		encryptedData, err := encrypt(data, key)
 		if err != nil {
 			return err
