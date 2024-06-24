@@ -27,26 +27,20 @@
             }
         },
         {
-            "name": "debug lvie  -restore c:\\temp\\restore...",
-            "type": "go",
-            "request": "launch",
-            "mode": "auto",
-            "program": "${workspaceFolder}",
-            "args": ["-restore", "c:\\temp\\restoretest\\live1", "-onedrive", "C:\\Users\\matti\\OneDrive\\Backup\\encryptandsync\\Digitalkamera", "-test"],
-            "env": {
-                "ENCRYPTION_KEY": "correct-horse-battery-staple-32."
-            }
-        },
-        {
             "name": "bad input",
             "type": "go",
             "request": "launch",
             "mode": "auto",
             "program": "${workspaceFolder}",
-            "args": ["-restore2"],
-            "env": {
-                "ENCRYPTION_KEY": "correct-horse-battery-staple-32."
-            }
+            "args": ["-restore2"]
+        },
+        {
+            "name": "Print metadata",
+            "type": "go",
+            "request": "launch",
+            "mode": "auto",
+            "program": "${workspaceFolder}",
+            "args": ["-metadata", "-onedrive", "${input:onedriveFolder}"]
         }
     ],
     "inputs": [
