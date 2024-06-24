@@ -23,6 +23,7 @@ func main() {
 	sourceFolder := flag.String("source", "", "Source folder for syncing files")
 	oneDriveFolder := flag.String("onedrive", "", "OneDrive folder for syncing files")
 	pathRegexp := flag.String("pathregexp", ".*", "Regular expression to match file paths for processing")
+	testFlag := flag.Bool("test", false, "Restore one random photo from metadata")
 	flag.Parse()
 
 	if *syncFlag {
@@ -32,7 +33,7 @@ func main() {
 		}
 		syncFiles(*sourceFolder, *oneDriveFolder, *encryptFlag, *pathRegexp)
 	} else if *restorePath != "" {
-		restoreFiles(*restorePath)
+		restoreFiles(*oneDriveFolder, *restorePath, *testFlag)
 	} else {
 		printHelp()
 	}
@@ -46,4 +47,5 @@ func printHelp() {
 	fmt.Println("  -source     Source folder for syncing files")
 	fmt.Println("  -onedrive   OneDrive folder for syncing files")
 	fmt.Println("  -pathregexp Regular expression to match file paths for processing")
+	fmt.Println("  -test       Restore one random photo from metadata")
 }
