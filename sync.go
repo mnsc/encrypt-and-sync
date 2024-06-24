@@ -65,6 +65,7 @@ func syncFiles(sourceFolder, oneDriveFolder string, encrypt bool, key []byte, pa
 				// Compute the hash of the file contents
 				hash := sha256.Sum256(data)
 				hashString := hex.EncodeToString(hash[:])
+				fmt.Printf("#")
 
 				// Get the last modified time in epoch seconds
 				modTime := info.ModTime().Unix()
@@ -84,9 +85,11 @@ func syncFiles(sourceFolder, oneDriveFolder string, encrypt bool, key []byte, pa
 						}
 						metadata = append(metadata, newMetadata)
 						metadataMap[relativePath] = newMetadata
+						fmt.Printf("+")
 						newPhotosCount++
 						photoProcessingTime += time.Since(photoStartTime) // Add time taken for this photo
 					} else {
+						fmt.Printf(".")
 						skippedPhotosCount++
 					}
 				} else {
@@ -101,6 +104,7 @@ func syncFiles(sourceFolder, oneDriveFolder string, encrypt bool, key []byte, pa
 					metadata = append(metadata, newMetadata)
 					metadataMap[relativePath] = newMetadata
 
+					fmt.Printf("+")
 					newPhotosCount++
 					photoProcessingTime += time.Since(photoStartTime) // Add time taken for this photo
 				}
@@ -149,7 +153,7 @@ func syncFiles(sourceFolder, oneDriveFolder string, encrypt bool, key []byte, pa
 	saveMetadata(metadataFile, metadata)
 
 	// Create the summary
-	summary := fmt.Sprintf("------------------------------------------\n")
+	summary := fmt.Sprintf("\n\n------------------------------------------\n")
 	summary += fmt.Sprintf("New photos: %d\n", newPhotosCount)
 	summary += fmt.Sprintf("Skipped photos: %d\n", skippedPhotosCount)
 	summary += fmt.Sprintf("------------------------------------------\n")
