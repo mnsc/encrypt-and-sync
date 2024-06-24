@@ -51,11 +51,7 @@ func main() {
 
 func printHelp() {
 	fmt.Println("Usage:")
-	fmt.Println("  -sync       Sync files to OneDrive")
-	fmt.Println("  -restore    Restore files from OneDrive")
-	fmt.Println("  -encrypt    Encrypt files before copying")
-	fmt.Println("  -source     Source folder for syncing files")
-	fmt.Println("  -onedrive   OneDrive folder for syncing files")
-	fmt.Println("  -pathregexp Regular expression to match file paths for processing")
-	fmt.Println("  -test       Restore one random photo from metadata")
+	flag.VisitAll(func(f *flag.Flag) {
+		fmt.Printf("  -%s\t%s\n", f.Name, f.Usage)
+	})
 }

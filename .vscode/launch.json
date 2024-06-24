@@ -36,6 +36,17 @@
             "env": {
                 "ENCRYPTION_KEY": "correct-horse-battery-staple-32."
             }
+        },
+        {
+            "name": "bad input",
+            "type": "go",
+            "request": "launch",
+            "mode": "auto",
+            "program": "${workspaceFolder}",
+            "args": ["-restore2"],
+            "env": {
+                "ENCRYPTION_KEY": "correct-horse-battery-staple-32."
+            }
         }
     ],
     "inputs": [
