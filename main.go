@@ -40,6 +40,7 @@ func main() {
 	testFlag := flag.Bool("test", false, "Restore one random media file from metadata")
 	metadataFlag := flag.Bool("metadata", false, "Print information about the metadata file")
 	removeMissingFlag := flag.Bool("removemissing", false, "Remove missing files from metadata")
+	forceHashCheck := flag.Bool("forcehashcheck", false, "Force hash check for files in metadata")
 	flag.Parse()
 
 	if *syncFlag {
@@ -47,7 +48,7 @@ func main() {
 			fmt.Println("Error: -source and -onedrive flags must be specified for syncing files")
 			os.Exit(1)
 		}
-		syncFiles(*sourceFolder, *oneDriveFolder, *encryptFlag, key, *pathRegexp)
+		syncFiles(*sourceFolder, *oneDriveFolder, *encryptFlag, key, *pathRegexp, *forceHashCheck)
 	} else if *restorePath != "" {
 		restoreFiles(*oneDriveFolder, *restorePath, key, *testFlag)
 	} else if *metadataFlag {

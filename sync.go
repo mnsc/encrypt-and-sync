@@ -12,7 +12,7 @@ import (
 	"time"
 )
 
-func syncFiles(sourceFolder, oneDriveFolder string, encrypt bool, key []byte, pathRegexp string) {
+func syncFiles(sourceFolder, oneDriveFolder string, encrypt bool, key []byte, pathRegexp string, forceHashCheck bool) {
 	startTime := time.Now() // Start timing the function
 
 	if err := handleKeyFile(oneDriveFolder, key); err != nil {
@@ -68,37 +68,50 @@ func syncFiles(sourceFolder, oneDriveFolder string, encrypt bool, key []byte, pa
 			if ext == ".cr2" || ext == ".jpg" || ext == ".mov" || ext == ".avi" {
 				mediaFileStartTime := time.Now() // Start timing for this media file
 
-				// Compute the hash of the file contents
-				hash := sha256.Sum256(data)
-				hashString := hex.EncodeToString(hash[:])
-				fmt.Printf("#")
-
-				// Get the last modified time in epoch seconds
-				modTime := info.ModTime().Unix()
-
 				// Check if the file with the same path exists in metadata
 				if metadataEntry, exists := metadataMap[relativePath]; exists {
-					// If the file exists but has a new hash, add to updatedMediaFiles
-					if metadataEntry.Hash != hashString {
-						updatedMediaFiles[relativePath] = hashString
-						// Handle the file encryption and writing
-						handleFileEncryptionAndWriting(oneDriveFolder, relativePath, hashString, data, key, info, encrypt)
-						// Update metadata
-						newMetadata := FileMetadata{
-							OriginalPath: relativePath,
-							Hash:         hashString,
-							ModTime:      modTime,
+					if forceHashCheck {
+						// Compute the hash of the file contents
+						hash := sha256.Sum256(data)
+						hashString := hex.EncodeToString(hash[:])
+						fmt.Printf("#")
+
+						// Get the last modified time in epoch seconds
+						modTime := info.ModTime().Unix()
+
+						// If the file exists but has a new hash, add to updatedMediaFiles
+						if metadataEntry.Hash != hashString {
+							updatedMediaFiles[relativePath] = hashString
+							// Handle the file encryption and writing
+							handleFileEncryptionAndWriting(oneDriveFolder, relativePath, hashString, data, key, info, encrypt)
+							// Update metadata
+							newMetadata := FileMetadata{
+								OriginalPath: relativePath,
+								Hash:         hashString,
+								ModTime:      modTime,
+							}
+							metadata = append(metadata, newMetadata)
+							metadataMap[relativePath] = newMetadata
+							fmt.Printf("+")
+							newMediaFilesCount++
+							mediaFileProcessingTime += time.Since(mediaFileStartTime) // Add time taken for this media file
+						} else {
+							fmt.Printf("=")
+							skippedMediaFilesCount++
 						}
-						metadata = append(metadata, newMetadata)
-						metadataMap[relativePath] = newMetadata
-						fmt.Printf("+")
-						newMediaFilesCount++
-						mediaFileProcessingTime += time.Since(mediaFileStartTime) // Add time taken for this media file
 					} else {
 						fmt.Printf(".")
 						skippedMediaFilesCount++
 					}
 				} else {
+					// Compute the hash of the file contents
+					hash := sha256.Sum256(data)
+					hashString := hex.EncodeToString(hash[:])
+					fmt.Printf("#")
+
+					// Get the last modified time in epoch seconds
+					modTime := info.ModTime().Unix()
+
 					// Handle the file encryption and writing
 					handleFileEncryptionAndWriting(oneDriveFolder, relativePath, hashString, data, key, info, encrypt)
 					// Update metadata
