@@ -59,7 +59,8 @@ func syncFiles(sourceFolder, oneDriveFolder string, encrypt bool, key []byte, pa
 			}
 
 			var destPath string
-			if strings.ToLower(filepath.Ext(path)) == ".cr2" {
+			ext := strings.ToLower(filepath.Ext(path))
+			if ext == ".cr2" || ext == ".jpg" {
 				photoStartTime := time.Now() // Start timing for this photo
 
 				// Compute the hash of the file contents
