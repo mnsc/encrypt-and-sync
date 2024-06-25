@@ -40,7 +40,10 @@
             "request": "launch",
             "mode": "auto",
             "program": "${workspaceFolder}",
-            "args": ["-metadata", "-onedrive", "${input:onedriveFolder}"]
+            "args": ["-metadata", "-onedrive", "${input:onedriveFolder}"],
+            "env": {
+                "ENCRYPTION_KEY": "correct-horse-battery-staple-32."
+            }
         }
     ],
     "inputs": [

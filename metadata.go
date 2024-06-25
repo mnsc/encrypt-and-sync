@@ -38,7 +38,6 @@ func createMetadataMap(metadata []FileMetadata) map[string]FileMetadata {
 }
 
 func printMetadataInfo(oneDriveFolder string) {
-
 	metadataFile := filepath.Join(oneDriveFolder, "metadata.json")
 	metadata := loadMetadata(metadataFile)
 
@@ -63,4 +62,58 @@ func printMetadataInfo(oneDriveFolder string) {
 			}
 		}
 	}
+
+	// Check for missing files
+	missingFiles := getMissingFiles(oneDriveFolder, metadata)
+	if len(missingFiles) > 0 {
+		fmt.Println("\nMissing files:")
+		for _, file := range missingFiles {
+			fmt.Println(file)
+		}
+	} else {
+		fmt.Println("\nNo missing files.")
+	}
+}
+
+func getMissingFiles(oneDriveFolder string, metadata []FileMetadata) []string {
+	var missingFiles []string
+	for _, entry := range metadata {
+		expectedPath := filepath.Join(oneDriveFolder, entry.OriginalPath+"-"+entry.Hash+".encr")
+		if _, err := os.Stat(expectedPath); os.IsNotExist(err) {
+			missingFiles = append(missingFiles, entry.OriginalPath)
+		}
+	}
+	return missingFiles
+}
+
+// New function to remove missing files from metadata and save it
+func removeMissingFiles(oneDriveFolder string) {
+	metadataFile := filepath.Join(oneDriveFolder, "metadata.json")
+	metadata := loadMetadata(metadataFile)
+
+	// Get missing files
+	missingFiles := getMissingFiles(oneDriveFolder, metadata)
+
+	// Filter out missing files from metadata
+	var updatedMetadata []FileMetadata
+	for _, entry := range metadata {
+		if !contains(missingFiles, entry.OriginalPath) {
+			updatedMetadata = append(updatedMetadata, entry)
+		} else {
+			fmt.Println("Removing: ", entry.OriginalPath)
+		}
+	}
+
+	// Save updated metadata
+	saveMetadata(metadataFile, updatedMetadata)
+}
+
+// Helper function to check if a slice contains a string
+func contains(slice []string, item string) bool {
+	for _, s := range slice {
+		if s == item {
+			return true
+		}
+	}
+	return false
 }
