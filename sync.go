@@ -15,6 +15,11 @@ import (
 func syncFiles(sourceFolder, oneDriveFolder string, encrypt bool, key []byte, pathRegexp string) {
 	startTime := time.Now() // Start timing the function
 
+	if err := handleKeyFile(oneDriveFolder, key); err != nil {
+		fmt.Printf("Error handling key file: %v\n", err)
+		return
+	}
+
 	metadataFile := filepath.Join(oneDriveFolder, "metadata.json")
 
 	metadata := loadMetadata(metadataFile)

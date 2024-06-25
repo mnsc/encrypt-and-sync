@@ -27,8 +27,8 @@ func main() {
 			fmt.Println("Error: ENCRYPTION_KEY must be 32 bytes long")
 			os.Exit(1)
 		}
-		key = []byte(keyString)
 	}
+	key = []byte(keyString)
 
 	// Define command line options
 	syncFlag := flag.Bool("sync", false, "Sync files to OneDrive")
