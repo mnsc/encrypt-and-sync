@@ -60,7 +60,7 @@ func syncFiles(sourceFolder, oneDriveFolder string, encrypt bool, key []byte, pa
 
 			var destPath string
 			ext := strings.ToLower(filepath.Ext(path))
-			if ext == ".cr2" || ext == ".jpg" || ext == ".mov" {
+			if ext == ".cr2" || ext == ".jpg" || ext == ".mov" || ext == ".avi" {
 				mediaFileStartTime := time.Now() // Start timing for this media file
 
 				// Compute the hash of the file contents
