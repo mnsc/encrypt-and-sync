@@ -1,11 +1,13 @@
 package main
 
 import (
-	"bufio"
 	"flag"
 	"fmt"
 	"os"
 	"strings"
+	"syscall"
+
+	"golang.org/x/term"
 )
 
 const keySize = 32
@@ -16,8 +18,10 @@ func main() {
 	var key []byte
 	if len(keyString) != keySize {
 		fmt.Println("ENCRYPTION_KEY environment variable not set or incorrect length. Please enter the encryption key:")
-		reader := bufio.NewReader(os.Stdin)
-		keyString, _ = reader.ReadString('\n')
+		fmt.Print("Enter the encryption key: ")
+		byteKey, _ := term.ReadPassword(int(syscall.Stdin))
+		keyString = string(byteKey)
+		fmt.Println() // Move to the next line after input
 		keyString = strings.TrimSpace(keyString)
 		if len(keyString) != keySize {
 			fmt.Println("Error: ENCRYPTION_KEY must be 32 bytes long")
