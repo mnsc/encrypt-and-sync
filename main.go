@@ -33,7 +33,7 @@ func main() {
 	sourceFolder := flag.String("source", "", "Source folder for syncing files")
 	oneDriveFolder := flag.String("onedrive", "", "OneDrive folder for syncing files")
 	pathRegexp := flag.String("pathregexp", ".*", "Regular expression to match file paths for processing")
-	testFlag := flag.Bool("test", false, "Restore one random photo from metadata")
+	testFlag := flag.Bool("test", false, "Restore one random media file from metadata")
 	metadataFlag := flag.Bool("metadata", false, "Print information about the metadata file")
 	removeMissingFlag := flag.Bool("removemissing", false, "Remove missing files from metadata")
 	flag.Parse()

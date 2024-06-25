@@ -20,13 +20,13 @@ func syncFiles(sourceFolder, oneDriveFolder string, encrypt bool, key []byte, pa
 	metadata := loadMetadata(metadataFile)
 	metadataMap := createMetadataMap(metadata)
 
-	newPhotosCount := 0
-	skippedPhotosCount := 0
+	newMediaFilesCount := 0
+	skippedMediaFilesCount := 0
 	copiedFilesCount := 0
-	fileExtensionCount := make(map[string]int) // Map to track file extension counts
-	updatedPhotos := make(map[string]string)   // Map to track updated photos and their new hashes
+	fileExtensionCount := make(map[string]int)   // Map to track file extension counts
+	updatedMediaFiles := make(map[string]string) // Map to track updated media files and their new hashes
 
-	photoProcessingTime := time.Duration(0) // To track total time for new or updated photos
+	mediaFileProcessingTime := time.Duration(0) // To track total time for new or updated media files
 
 	// Compile the regular expression
 	re, err := regexp.Compile(pathRegexp)
@@ -60,8 +60,8 @@ func syncFiles(sourceFolder, oneDriveFolder string, encrypt bool, key []byte, pa
 
 			var destPath string
 			ext := strings.ToLower(filepath.Ext(path))
-			if ext == ".cr2" || ext == ".jpg" {
-				photoStartTime := time.Now() // Start timing for this photo
+			if ext == ".cr2" || ext == ".jpg" || ext == ".mov" {
+				mediaFileStartTime := time.Now() // Start timing for this media file
 
 				// Compute the hash of the file contents
 				hash := sha256.Sum256(data)
@@ -73,9 +73,9 @@ func syncFiles(sourceFolder, oneDriveFolder string, encrypt bool, key []byte, pa
 
 				// Check if the file with the same path exists in metadata
 				if metadataEntry, exists := metadataMap[relativePath]; exists {
-					// If the file exists but has a new hash, add to updatedPhotos
+					// If the file exists but has a new hash, add to updatedMediaFiles
 					if metadataEntry.Hash != hashString {
-						updatedPhotos[relativePath] = hashString
+						updatedMediaFiles[relativePath] = hashString
 						// Handle the file encryption and writing
 						handleFileEncryptionAndWriting(oneDriveFolder, relativePath, hashString, data, key, info, encrypt)
 						// Update metadata
@@ -87,11 +87,11 @@ func syncFiles(sourceFolder, oneDriveFolder string, encrypt bool, key []byte, pa
 						metadata = append(metadata, newMetadata)
 						metadataMap[relativePath] = newMetadata
 						fmt.Printf("+")
-						newPhotosCount++
-						photoProcessingTime += time.Since(photoStartTime) // Add time taken for this photo
+						newMediaFilesCount++
+						mediaFileProcessingTime += time.Since(mediaFileStartTime) // Add time taken for this media file
 					} else {
 						fmt.Printf(".")
-						skippedPhotosCount++
+						skippedMediaFilesCount++
 					}
 				} else {
 					// Handle the file encryption and writing
@@ -106,8 +106,8 @@ func syncFiles(sourceFolder, oneDriveFolder string, encrypt bool, key []byte, pa
 					metadataMap[relativePath] = newMetadata
 
 					fmt.Printf("+")
-					newPhotosCount++
-					photoProcessingTime += time.Since(photoStartTime) // Add time taken for this photo
+					newMediaFilesCount++
+					mediaFileProcessingTime += time.Since(mediaFileStartTime) // Add time taken for this media file
 				}
 			} else {
 				// Create the destination path
@@ -155,8 +155,8 @@ func syncFiles(sourceFolder, oneDriveFolder string, encrypt bool, key []byte, pa
 
 	// Create the summary
 	summary := "\n\n------------------------------------------\n"
-	summary += fmt.Sprintf("New photos: %d\n", newPhotosCount)
-	summary += fmt.Sprintf("Skipped photos: %d\n", skippedPhotosCount)
+	summary += fmt.Sprintf("New media files: %d\n", newMediaFilesCount)
+	summary += fmt.Sprintf("Skipped media files: %d\n", skippedMediaFilesCount)
 	summary += "------------------------------------------\n"
 	summary += fmt.Sprintf("Copied %d other files\n", copiedFilesCount)
 	summary += "Types:\n"
@@ -164,21 +164,21 @@ func syncFiles(sourceFolder, oneDriveFolder string, encrypt bool, key []byte, pa
 		summary += fmt.Sprintf("  %s: %d\n", ext, count)
 	}
 
-	// Add updated photos to the summary
-	if len(updatedPhotos) > 0 {
+	// Add updated media files to the summary
+	if len(updatedMediaFiles) > 0 {
 		summary += "------------------------------------------\n"
-		summary += "Updated photos:\n"
-		for photo, hash := range updatedPhotos {
-			summary += fmt.Sprintf("  %s (new hash: %s)\n", photo, hash)
+		summary += "Updated media files:\n"
+		for mediaFile, hash := range updatedMediaFiles {
+			summary += fmt.Sprintf("  %s (new hash: %s)\n", mediaFile, hash)
 		}
 	}
 
 	// Add timing information and regexp to the summary
 	totalTime := time.Since(startTime)
-	averagePhotoTime := photoProcessingTime.Seconds() / float64(newPhotosCount+len(updatedPhotos))
+	averageMediaFileTime := mediaFileProcessingTime.Seconds() / float64(newMediaFilesCount+len(updatedMediaFiles))
 	summary += "------------------------------------------\n"
 	summary += fmt.Sprintf("Total time taken: %.2f seconds\n", totalTime.Seconds())
-	summary += fmt.Sprintf("Average time per new/updated photo: %.2f seconds\n", averagePhotoTime)
+	summary += fmt.Sprintf("Average time per new/updated media file: %.2f seconds\n", averageMediaFileTime)
 	summary += fmt.Sprintf("Regular expression used: %s\n", pathRegexp)
 
 	// Print the summary to standard out
