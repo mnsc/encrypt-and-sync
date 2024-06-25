@@ -153,10 +153,10 @@ func syncFiles(sourceFolder, oneDriveFolder string, encrypt bool, key []byte, pa
 	saveMetadata(metadataFile, metadata)
 
 	// Create the summary
-	summary := fmt.Sprintf("\n\n------------------------------------------\n")
+	summary := "\n\n------------------------------------------\n"
 	summary += fmt.Sprintf("New photos: %d\n", newPhotosCount)
 	summary += fmt.Sprintf("Skipped photos: %d\n", skippedPhotosCount)
-	summary += fmt.Sprintf("------------------------------------------\n")
+	summary += "------------------------------------------\n"
 	summary += fmt.Sprintf("Copied %d other files\n", copiedFilesCount)
 	summary += "Types:\n"
 	for ext, count := range fileExtensionCount {
@@ -175,7 +175,7 @@ func syncFiles(sourceFolder, oneDriveFolder string, encrypt bool, key []byte, pa
 	// Add timing information and regexp to the summary
 	totalTime := time.Since(startTime)
 	averagePhotoTime := photoProcessingTime.Seconds() / float64(newPhotosCount+len(updatedPhotos))
-	summary += fmt.Sprintf("------------------------------------------\n")
+	summary += "------------------------------------------\n"
 	summary += fmt.Sprintf("Total time taken: %.2f seconds\n", totalTime.Seconds())
 	summary += fmt.Sprintf("Average time per new/updated photo: %.2f seconds\n", averagePhotoTime)
 	summary += fmt.Sprintf("Regular expression used: %s\n", pathRegexp)
